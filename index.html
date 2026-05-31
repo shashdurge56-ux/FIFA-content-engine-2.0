@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC2026 Content Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00C853;
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f0;
+    --muted: #888;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.04em; }
+  .logo span { color: var(--green); }
+  .pill {
+    font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+    background: rgba(0,200,83,0.12); color: var(--green); border: 1px solid rgba(0,200,83,0.25);
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 16px;
+  }
+  .card h2 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+  }
+
+  .proxy-row { display: flex; gap: 10px; align-items: center; }
+  .proxy-row input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 14px; color: var(--text);
+    font-family: 'Barlow', sans-serif; outline: none;
+  }
+  .proxy-row input:focus { border-color: rgba(0,200,83,0.4); }
+  .proxy-row input::placeholder { color: var(--muted); }
+  .save-btn {
+    padding: 10px 18px; font-size: 13px; font-weight: 500; border-radius: 8px;
+    border: 1px solid rgba(0,200,83,0.4); background: rgba(0,200,83,0.08); color: var(--green);
+    cursor: pointer; font-family: 'Barlow', sans-serif; white-space: nowrap; transition: background 0.15s;
+  }
+  .save-btn:hover { background: rgba(0,200,83,0.15); }
+  .card-note { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+  .card-note a { color: var(--green); text-decoration: none; }
+  .card-note code { background: var(--surface2); padding: 1px 6px; border-radius: 4px; font-size: 12px; color: #ccc; }
+  .saved-msg { color: var(--green); font-size: 12px; margin-top: 8px; display: none; }
+
+  .type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .type-btn {
+    padding: 10px 8px; font-size: 13px; font-weight: 500; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+    cursor: pointer; text-align: center; transition: all 0.15s; font-family: 'Barlow', sans-serif;
+  }
+  .type-btn:hover { border-color: rgba(0,200,83,0.3); color: var(--text); }
+  .type-btn.active { border-color: var(--green); background: rgba(0,200,83,0.1); color: var(--green); }
+
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mode-btn {
+    padding: 12px; font-size: 14px; font-weight: 500; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+    cursor: pointer; text-align: center; transition: all 0.15s; font-family: 'Barlow', sans-serif;
+  }
+  .mode-btn:hover { border-color: rgba(0,200,83,0.3); color: var(--text); }
+  .mode-btn.active { border-color: var(--green); background: rgba(0,200,83,0.1); color: var(--green); }
+  .mode-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .mode-btn.active .mode-sub { color: rgba(0,200,83,0.7); }
+
+  textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; font-size: 14px; color: var(--text);
+    font-family: 'Barlow', sans-serif; resize: none; outline: none; line-height: 1.6;
+  }
+  textarea:focus { border-color: rgba(0,200,83,0.4); }
+  textarea::placeholder { color: var(--muted); }
+
+  .generate-btn {
+    width: 100%; padding: 14px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 10px; border: none; background: var(--green); color: #000;
+    cursor: pointer; transition: background 0.15s, transform 0.1s; margin-top: 4px;
+  }
+  .generate-btn:hover { background: #00e660; }
+  .generate-btn:active { transform: scale(0.99); }
+  .generate-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+
+  .output-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-top: 16px; display: none;
+  }
+  .output-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .output-title {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+  .copy-btn {
+    padding: 6px 14px; font-size: 12px; font-weight: 500; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+    cursor: pointer; font-family: 'Barlow', sans-serif; transition: all 0.15s;
+  }
+  .copy-btn:hover { color: var(--text); }
+  .output-text {
+    font-size: 14px; line-height: 1.85; color: var(--text); white-space: pre-wrap;
+    background: var(--surface2); border-radius: 8px; padding: 1rem 1.25rem;
+  }
+
+  .history-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 1.5rem; margin-top: 16px; display: none;
+  }
+  .history-wrap h2 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+  }
+  .hist-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item:hover .hist-topic { color: var(--green); }
+  .hist-topic { font-size: 14px; font-weight: 500; color: var(--text); transition: color 0.15s; }
+  .hist-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .hist-arrow { color: var(--muted); font-size: 18px; }
+
+  .spinner {
+    display: inline-block; width: 15px; height: 15px;
+    border: 2px solid #333; border-top-color: #000;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: -3px; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">WC<span>2026</span> Content Engine</div>
+  <div class="pill">AI Powered</div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Proxy server URL</h2>
+    <div class="proxy-row">
+      <input type="text" id="proxyUrl" placeholder="https://your-app-name.onrender.com" />
+      <button class="save-btn" onclick="saveProxy()">Save</button>
+    </div>
+    <p class="card-note">
+      Deploy the proxy server on Render (free). Once deployed, paste your Render URL above.<br>
+      See the <code>README.md</code> in the download for step-by-step setup instructions.
+    </p>
+    <p class="saved-msg" id="savedMsg">Saved!</p>
+  </div>
+
+  <div class="card">
+    <h2>Content type</h2>
+    <div class="type-grid" id="typeGrid">
+      <div class="type-btn active" data-val="Match prediction">Match prediction</div>
+      <div class="type-btn" data-val="Squad analysis">Squad analysis</div>
+      <div class="type-btn" data-val="Player spotlight">Player spotlight</div>
+      <div class="type-btn" data-val="Top 5 ranking">Top 5 ranking</div>
+      <div class="type-btn" data-val="Hot take / debate">Hot take</div>
+      <div class="type-btn" data-val="FIFA songs ranking">FIFA songs</div>
+      <div class="type-btn" data-val="Top goals edit">Top goals</div>
+      <div class="type-btn" data-val="Hype player edit">Hype edit</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Output mode</h2>
+    <div class="mode-grid">
+      <div class="mode-btn active" onclick="setMode('single', this)">
+        Single Reels script
+        <div class="mode-sub">One complete ready-to-use script</div>
+      </div>
+      <div class="mode-btn" onclick="setMode('week', this)">
+        Full week of ideas
+        <div class="mode-sub">7 post ideas planned out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Topic / focus</h2>
+    <textarea id="topicInput" rows="3" placeholder="e.g. England vs France prediction, Bellingham spotlight, Top 5 World Cup goals of all time..."></textarea>
+  </div>
+
+  <button class="generate-btn" id="generateBtn" onclick="generate()">Generate content</button>
+
+  <div class="output-wrap" id="outputWrap">
+    <div class="output-header">
+      <div class="output-title" id="outputTitle">Output</div>
+      <button class="copy-btn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="output-text" id="outputText"></div>
+  </div>
+
+  <div class="history-wrap" id="historyWrap">
+    <h2>Recent generations</h2>
+    <div id="historyList"></div>
+  </div>
+
+</div>
+
+<script>
+let selectedType = 'Match prediction';
+let selectedMode = 'single';
+let history = [];
+
+window.onload = () => {
+  const saved = localStorage.getItem('wc_proxy_url');
+  if (saved) document.getElementById('proxyUrl').value = saved;
+};
+
+function saveProxy() {
+  const url = document.getElementById('proxyUrl').value.trim().replace(/\/$/, '');
+  if (!url) return;
+  localStorage.setItem('wc_proxy_url', url);
+  const msg = document.getElementById('savedMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+document.querySelectorAll('#typeGrid .type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#typeGrid .type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = btn.dataset.val;
+  });
+});
+
+function setMode(mode, el) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedMode = mode;
+}
+
+async function generate() {
+  const proxyUrl = localStorage.getItem('wc_proxy_url') || document.getElementById('proxyUrl').value.trim().replace(/\/$/, '');
+  if (!proxyUrl) { alert('Please enter and save your Render proxy URL first.'); return; }
+
+  const topic = document.getElementById('topicInput').value.trim();
+  if (!topic) { document.getElementById('topicInput').focus(); return; }
+
+  const btn = document.getElementById('generateBtn');
+  const outputWrap = document.getElementById('outputWrap');
+  const outputText = document.getElementById('outputText');
+  const outputTitle = document.getElementById('outputTitle');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating...';
+  outputWrap.style.display = 'block';
+  outputText.textContent = 'Writing your content...';
+
+  const isWeek = selectedMode === 'week';
+
+  const systemPrompt = `You are an expert social media content creator for a World Cup 2026 Instagram Reels account focused on European football (England, France, Spain, Germany, Portugal, Italy). The account is faceless — no presenter on camera. Style: punchy, confident, opinionated, mix of analysis, hype and entertainment. Always write in English.`;
+
+  const userPrompt = isWeek
+    ? `Generate a full week of 7 Instagram Reels post ideas for the topic: "${topic}". Content type focus: ${selectedType}.
+
+For each of the 7 days provide:
+DAY [N]: [Punchy post title]
+Hook: [Bold opening line - 1 sentence]
+Covers: [3 bullet points]
+Format: [text slides / voiceover / hype edit]
+Best time to post: [time and reason]
+
+Keep each day tight. Vary the angle so the week feels fresh.`
+    : `Write a complete word-for-word Instagram Reels script for: "${topic}". Content type: ${selectedType}.
+
+Structure:
+
+HOOK (0-2 sec):
+[Bold opening line that stops the scroll]
+
+POINT 1 (3-10 sec):
+[First key point with a stat or fact]
+
+POINT 2 (11-18 sec):
+[Second key point]
+
+POINT 3 (19-25 sec):
+[Third key point]
+
+VERDICT (26-28 sec):
+[Your confident final take]
+
+CTA (last slide):
+[Question to drive comments]
+
+---
+FORMAT: [text slides / voiceover / hype edit]
+CAPTION: [Instagram caption with 5 hashtags]
+
+Be confident, punchy and opinionated.`;
+
+  try {
+    const res = await fetch(`${proxyUrl}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(typeof data.error === 'string' ? data.error : data.error.message);
+    const text = data.content.map(i => i.text || '').join('');
+
+    outputTitle.textContent = isWeek ? `7-day plan — ${topic}` : `Script — ${topic}`;
+    outputText.textContent = text;
+
+    history.unshift({ topic, type: selectedType, mode: selectedMode, output: text, title: outputTitle.textContent });
+    if (history.length > 8) history.pop();
+    renderHistory();
+
+  } catch(e) {
+    outputText.textContent = 'Error: ' + (e.message || 'Check your proxy URL and try again.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Generate content';
+}
+
+function renderHistory() {
+  const wrap = document.getElementById('historyWrap');
+  const list = document.getElementById('historyList');
+  if (!history.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = history.map((h, i) => `
+    <div class="hist-item" onclick="loadHistory(${i})">
+      <div>
+        <div class="hist-topic">${h.topic}</div>
+        <div class="hist-meta">${h.type} &middot; ${h.mode === 'week' ? '7-day plan' : 'Single script'}</div>
+      </div>
+      <div class="hist-arrow">›</div>
+    </div>
+  `).join('');
+}
+
+function loadHistory(i) {
+  const h = history[i];
+  document.getElementById('outputWrap').style.display = 'block';
+  document.getElementById('outputTitle').textContent = h.title;
+  document.getElementById('outputText').textContent = h.output;
+  document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyOutput() {
+  navigator.clipboard.writeText(document.getElementById('outputText').textContent).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+</body>
+</html>
